@@ -1,0 +1,192 @@
+type Customer {
+  id: ID! @id
+  email: String! @unique
+  password: String!
+  name: String!
+  tel: String!
+  customerStripeId: String
+  orders: [Order]
+  paymentMethod: PaymentMethod
+    @relation(name: "PaymentMethodsOnCustomer", onDelete: CASCADE, link: INLINE)
+  createdAt: DateTime @createdAt
+  updatedAt: DateTime @updatedAt
+}
+
+type PaymentMethod {
+  id: ID! @id
+  payment_method_id: String! @unique
+  brand: String!
+  last4: String!
+  customer: Customer
+    @relation(name: "PaymentMethodsOnCustomer", onDelete: SET_NULL)
+}
+
+type Address {
+  id: ID! @id
+  number: String!
+  streetName: String!
+  city: String!
+  postalCode: String!
+  restaurant: Restaurant!
+    @relation(name: "AddressOnRestaurant", onDelete: SET_NULL)
+  createdAt: DateTime! @createdAt
+  updatedAt: DateTime! @updatedAt
+}
+
+type Restaurant {
+  id: ID! @id
+  name: String!
+  email: String! @unique
+  password: String!
+  address: Address!
+    @relation(name: "AddressOnRestaurant", onDelete: CASCADE, link: INLINE)
+  tel: String!
+  image: String
+  logo: String
+  description: String
+  status: String
+  tags: [String] @scalarList(strategy: RELATION)
+  openingTimes: [OpeningTime]
+    @relation(name: "OpeningTimesOnRestaurant", onDelete: CASCADE)
+  averageBusyPreparationTime: String
+  averagePreparationTime: String
+  menus: [Menu]
+  isConnected: Boolean! @default(value: false)
+  stripe_user_id: String
+  stripe_publishable_key: String
+  access_token: String
+  refresh_token: String
+  createdAt: DateTime! @createdAt
+  updatedAt: DateTime! @updatedAt
+}
+
+type OpeningTime {
+  id: ID! @id
+  hours: [String!] @scalarList(strategy: RELATION)
+  days: [String!] @scalarList(strategy: RELATION)
+  restaurant: Restaurant
+    @relation(name: "OpeningTimesOnRestaurant", onDelete: SET_NULL)
+}
+
+type ServiceTime {
+  id: ID! @id
+  hours: [String!] @scalarList(strategy: RELATION)
+  days: [String!] @scalarList(strategy: RELATION)
+  menu: Menu @relation(name: "ServiceTimesOnMenu", onDelete: SET_NULL)
+}
+
+type Menu {
+  id: ID! @id
+  name: String!
+  description: String
+  restaurant: Restaurant!
+  serviceTimes: [ServiceTime]
+    @relation(name: "ServiceTimesOnMenu", onDelete: CASCADE)
+  categories: [MenuCategory]
+    @relation(name: "CategoriesOnMenu", onDelete: CASCADE)
+  createdAt: DateTime! @createdAt
+  updatedAt: DateTime! @updatedAt
+}
+
+type MenuCategory {
+  id: ID! @id
+  name: String!
+  menu: Menu! @relation(name: "CategoriesOnMenu", onDelete: SET_NULL)
+  description: String
+  available: Boolean! @default(value: true)
+  items: [MenuItem]
+    @relation(name: "MenuItemsOnMenuCategory", onDelete: CASCADE)
+  createdAt: DateTime! @createdAt
+  updatedAt: DateTime! @updatedAt
+}
+
+type MenuItem {
+  id: ID! @id
+  name: String
+  description: String
+  price: String
+  image: String
+  available: Boolean! @default(value: true)
+  dietary: [String] @scalarList(strategy: RELATION)
+  category: MenuCategory
+    @relation(name: "MenuItemsOnMenuCategory", onDelete: SET_NULL)
+  options: [Option]
+  createdAt: DateTime! @createdAt
+  updatedAt: DateTime! @updatedAt
+}
+
+type OptionItem {
+  id: ID! @id
+  name: String!
+  price: String!
+  option: Option @relation(name: "OptionItemsOnOption", onDelete: SET_NULL)
+  createdAt: DateTime! @createdAt
+  updatedAt: DateTime! @updatedAt
+}
+
+type Option {
+  id: ID! @id
+  name: String!
+  # The minumum number of items the customer has to choose
+  min: String!
+  # The maximume number of items the customer can choose
+  max: String!
+  items: [OptionItem!]!
+    @relation(name: "OptionItemsOnOption", onDelete: CASCADE)
+  menuItems: [MenuItem]
+  restaurant: Restaurant
+  createdAt: DateTime! @createdAt
+  updatedAt: DateTime! @updatedAt
+}
+
+type OrderItemOptionItem {
+  id: ID! @id
+  name: String!
+  price: String!
+  option: OrderItemOption
+    @relation(name: "OrderItemOptionItemsOnOrderItemOption", onDelete: SET_NULL)
+  createdAt: DateTime! @createdAt
+  updatedAt: DateTime! @updatedAt
+}
+
+type OrderItemOption {
+  id: ID! @id
+  name: String!
+  items: [OrderItemOptionItem!]!
+    @relation(name: "OrderItemOptionItemsOnOrderItemOption", onDelete: CASCADE)
+  orderItem: OrderItem!
+    @relation(name: "OrderItemOptionsOnOrderItem", onDelete: SET_NULL)
+  createdAt: DateTime! @createdAt
+  updatedAt: DateTime! @updatedAt
+}
+
+type OrderItem {
+  id: ID! @id
+  name: String!
+  price: String
+  image: String
+  quantity: Int
+  options: [OrderItemOption]
+    @relation(name: "OrderItemOptionsOnOrderItem", onDelete: CASCADE)
+  order: Order! @relation(name: "OrderItemsOrder", onDelete: SET_NULL)
+  createdAt: DateTime! @createdAt
+  updatedAt: DateTime! @updatedAt
+}
+
+type Order {
+  id: ID! @id
+  orderNo: Int!
+  paymentIntentId: String
+  status: String! @default(value: "Pending")
+  createdAt: DateTime! @createdAt
+  updatedAt: DateTime! @updatedAt
+  dueAt: DateTime!
+  delayedBy: Int @default(value: 0)
+  restaurant: Restaurant!
+  customer: Customer!
+  items: [OrderItem] @relation(name: "OrderItemsOrder", onDelete: CASCADE)
+  total: String!
+  priceAdjustment: String @default(value: "0")
+  cancelReason: String
+  priceAdjustmentReason: String
+}
